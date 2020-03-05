@@ -44,14 +44,12 @@ def get_all_stock_data(symbol, cache=cached_stocks):
         stock.info
     except: # read stock data from internet
         stock = yf.Ticker(symbol)
-    
-    try: # check if stock contains something
-        stock.info
-    except:
-        raise NameError('no data for stock symbol found')
-    else: # cache data if data successfully obtained
-        cached_stocks[symbol] = stock
-
+        try: # check if stock contains something, if True cache data
+            stock.info
+            cached_stocks[symbol] = stock
+        except:
+            raise NameError('no data for stock symbol found')
+ 
     return stock
 
 
