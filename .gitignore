@@ -1,0 +1,4 @@
+error_logs/
+request_logs/
+__pycache__/
+tmp.png
