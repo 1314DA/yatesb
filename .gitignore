@@ -1,0 +1,5 @@
+error_logs/
+request_logs/
+user_watchlists/
+__pycache__/
+tmp.png

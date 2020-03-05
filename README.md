@@ -7,7 +7,6 @@ yet another telegram stock bot
 * test how interaction with group chats works
 * optimize sending plots so that no temporary image needs to be saved
 * avoid flood limits of telegram and yfinance
-* implement lru cache and periodic cache clearance (e.g. functools)
 * add a license
 * decent documentation
 

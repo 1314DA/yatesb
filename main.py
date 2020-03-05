@@ -4,14 +4,6 @@ it helps me to keep up to date with my stocks
 based on the yfinance module by Ran Aroussi
 '''
 
-''' TO-DOs:
-    - watchlist capability
-    - test how interaction with group chats works
-    - optimize sending plots so that no temporary image needs to be saved
-    - avoid flood limits of telegram and yfinance
-      - implement lru_cache and periodic cache clearance (e.g. functools)
-'''
-
 #---------- general module imports ----------#
 import sys
 import datetime as dt
@@ -19,6 +11,7 @@ from os import path, mkdir
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Updater
 from telegram.ext import CommandHandler, MessageHandler, Filters
+
 
 #---------- define functions ----------#
 import func_basic as fb
@@ -34,6 +27,9 @@ if not path.isdir('request_logs'):
     mkdir('request_logs')
 
 fl.error_logging('error_logs/{}.log'.format(dt.date.today()))
+
+if not path.isdir('user_watchlists'):
+    mkdir('user_watchlists')
 
 
 #---------- get token ----------#
