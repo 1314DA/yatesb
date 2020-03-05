@@ -28,6 +28,9 @@ if not path.isdir('request_logs'):
 
 fl.error_logging('error_logs/{}.log'.format(dt.date.today()))
 
+if not path.isdir('user_watchlists'):
+    mkdir('user_watchlists')
+
 
 #---------- get token ----------#
 with open('../telegram_bot_token', 'r') as f:

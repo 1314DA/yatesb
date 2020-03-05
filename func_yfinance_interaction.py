@@ -18,14 +18,20 @@ cached_stocks = ExpiringDict(
 
 
 #---------- functions loading stuff from online ----------#
+
 def get_all_stock_data(symbol, cache=cached_stocks):
     '''
     get all available data for given symbol
+    preferentially used cached data from the last hour
+    if no cached data available try to get data from yfinance
 
     Parameters
     ----------
     symbol : str
         stock symbol of yahoo finanace
+    cache : dict, ExpiringDict
+        dictionary that holds cached stock data
+        dict contains 'symbol':'yfinance.Ticker object'
 
     Raises
     ------
@@ -54,6 +60,7 @@ def get_all_stock_data(symbol, cache=cached_stocks):
 
 
 #---------- filter functions use yfinance.Ticker objects as input ----------#
+
 def filter_business_summary(stock):
     '''
     filter information on stock business
@@ -95,7 +102,7 @@ def filter_currency(stock):
     Returns
     -------
     currency : str
-        currency name of 'n/a' if not available
+        currency name or 'n/a' if not available
 
     '''
     
@@ -135,7 +142,6 @@ def filter_daily_values(stock):
     try:
         regularMarketPreviousClose = stock.info['regularMarketPreviousClose']
         regularMarketOpen = stock.info['regularMarketOpen']
-        regularMarketPrice = stock.info['regularMarketPrice']
         regularMarketDayLow = stock.info['regularMarketDayLow']
         regularMarketDayHigh = stock.info['regularMarketDayHigh']
         ask = stock.info['ask']
@@ -147,7 +153,6 @@ def filter_daily_values(stock):
              'open today: {} {}\n'.format(regularMarketOpen, currency) +
              'low today: {} {}\n'.format(regularMarketDayLow, currency) +
              'high today: {} {}\n'.format(regularMarketDayHigh, currency) +
-             'latest today: {} {}\n'.format(regularMarketPrice, currency) +
              'bid / ask: {} {} / {} {}'.format(bid, currency, ask, currency) )
     
     return daily
@@ -183,6 +188,7 @@ def filter_website_url(stock):
 
 
 #---------- plot functions make a pyplot ----------#
+
 def plot_n_day_historical_value(stock, n):
     '''
     plot the historical data (at close) of the last n working days
@@ -196,13 +202,15 @@ def plot_n_day_historical_value(stock, n):
 
     Returns
     -------
-    hist
-        historical data of given timeframe
+    retval : int
+        = 0 if everything worked fine
+        = 1 if no historical data could be found
+        = 2 if historical data found but plotting not possible
         
     Yields
     -------
-    plot
-        stock data for n days to the past
+    tmp.png : image file
+        stock data for n days to the past in a pyplot graph stored as png
     '''
     
     retval = 0
@@ -213,15 +221,16 @@ def plot_n_day_historical_value(stock, n):
     except:
         retval = 1
 
-    try:
-        fig = plt.figure(figsize=(6,4))
-        ax = fig.add_subplot(111)
-        ax.set_xlabel('date')
-        ax.set_ylabel('absolute value in {}'.format(currency))
-        ax.plot(hist.index, hist['Close'])
-        plt.savefig('tmp.png')
-    except:
-        retval = 2
+    if retval == 0:
+        try:
+            fig = plt.figure(figsize=(6,4))
+            ax = fig.add_subplot(111)
+            ax.set_xlabel('date')
+            ax.set_ylabel('absolute value in {}'.format(currency))
+            ax.plot(hist.index, hist['Close'])
+            plt.savefig('tmp.png')
+        except:
+            retval = 2
 
     return retval
 
@@ -235,48 +244,68 @@ def plot_historical_dividends(stock):
     stock : yfinance.Ticker
         stock obtained with yfinance.Ticker method
 
-    Raises
-    ------
-    someError
-        that tells you something
-
     Returns
     -------
-    dividends
-        historical dividends
-    dividend_rate : float
-        latest dividend rate
+    retval : int
+        = 0 if everything worked fine
+        = 1 if no historical data could be found
+        = 2 if historical data found but plotting not possible
+    dividend_latest : float
+        latest dividend
         
     Yields
     -------
-    plot
-        dividends over time
+    tmp.png : image file
+        dividends over time in a pyplot graph stored as png
     '''
     
     retval = 0
 
     try:
         dividends = stock.dividends
-        dividend_rate = stock.info['dividendRate']
+        dividend_latest = stock.info['dividendRate']
         currency = filter_currency(stock)
     except:
         retval = 1
 
-    try:
-        fig = plt.figure(figsize=(6,4))
-        ax = fig.add_subplot(111)
-        ax.set_xlabel('date')
-        ax.set_ylabel('dividend value in {}'.format(currency))
-        ax.plot(dividends.index, dividends)
-        plt.savefig('tmp.png')
-    except:
-        retval = 2
+    if retval == 0:
+        try:
+            fig = plt.figure(figsize=(6,4))
+            ax = fig.add_subplot(111)
+            ax.set_xlabel('date')
+            ax.set_ylabel('dividend value in {}'.format(currency))
+            ax.plot(dividends.index, dividends)
+            plt.savefig('tmp.png')
+        except:
+            retval = 2
     
-    return retval, dividend_rate
+    return retval, dividend_latest
 
 
 #---------- print functions give stuff to telegram chat ----------#
+
 def print_business_summary(update, context):
+    '''
+    send stock business summary to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns string with stock business summary
+    '''
+
     symbol = context.args[0]
     stock = get_all_stock_data(symbol)
     summary = filter_business_summary(stock)
@@ -287,6 +316,28 @@ def print_business_summary(update, context):
 
 
 def print_daily_values(update, context):
+    '''
+    send today's stock values to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns string with today's stock values
+        ATTENTION: may be up to one hour old (see cache above)
+    '''
+
     symbol = context.args[0]
     stock = get_all_stock_data(symbol)
     daily_vaules = filter_daily_values(stock)
@@ -297,6 +348,27 @@ def print_daily_values(update, context):
 
 
 def print_website(update, context):
+    '''
+    send stock company website to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns string with stock company website
+    '''
+
     symbol = context.args[0]
     stock = get_all_stock_data(symbol)
     url = filter_website_url(stock)
@@ -307,6 +379,27 @@ def print_website(update, context):
 
 
 def print_plot_historical(update, context):
+    '''
+    send historical stock closing value to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns image with historical stock closing value
+    '''
+
     symbol = context.args[0]
     # add option to specify the days to plot
     n=100
@@ -328,6 +421,27 @@ def print_plot_historical(update, context):
 
 
 def print_plot_dividends(update, context):
+    '''
+    send historical dividends to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns image with historical stock closing value
+    '''
+
     symbol = context.args[0]
     stock = get_all_stock_data(symbol)
     val, rate = plot_historical_dividends(stock)
@@ -349,6 +463,27 @@ def print_plot_dividends(update, context):
 #---------- error handler functions ----------#
 
 def print_err(update, context):
+    '''
+    send error message for stock data functions to chat
+
+    Parameters
+    ----------
+    update : telegram.ext.Updater
+        hands over the update from telegram chat
+    context : telegram.ext.CallbackContext
+        context for dispatcher
+
+    Raises
+    ------
+    for errors see 'print_err' below
+
+    Returns
+    -------
+    context.bot.send_message : telegram.ext.CallbackContext method
+        return message to effective chat id
+        returns string with error message for stock data functions
+    '''
+
     try:
         raise context.error
     except NameError as err:
