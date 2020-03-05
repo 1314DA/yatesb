@@ -6,9 +6,19 @@ import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 import datetime
+from expiringdict import ExpiringDict
+
+
+# create cache inside memory in order to speed up getting stock information
+# --> cache on hard drive in the future?
+cached_stocks = ExpiringDict(
+    max_len = 100,
+    max_age_seconds = 3600
+)
+
 
 #---------- functions loading stuff from online ----------#
-def get_all_stock_data(symbol):
+def get_all_stock_data(symbol, cache=cached_stocks):
     '''
     get all available data for given symbol
 
@@ -28,14 +38,20 @@ def get_all_stock_data(symbol):
         contains all yahoo finance data on the given stock
 
     '''
+
+    try: # to read stored stock data
+        stock = cached_stocks.get(symbol)
+        stock.info
+    except: # read stock data from internet
+        stock = yf.Ticker(symbol)
     
-    stock = yf.Ticker(symbol)
-    
-    try:
+    try: # check if stock contains something
         stock.info
     except:
         raise NameError('no data for stock symbol found')
-    
+    else: # cache data if data successfully obtained
+        cached_stocks[symbol] = stock
+
     return stock
 
 
