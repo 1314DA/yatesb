@@ -6,6 +6,7 @@ interactive buttons for each watchlist item
 interactively chose what to do with watchlist item
 '''
 
+
 from os import path
 
 def create_user_watchlist(user_id):

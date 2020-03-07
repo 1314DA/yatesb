@@ -1,6 +1,7 @@
 ''' wrapper functions for interacting with yfinance
 '''
 
+
 import yfinance as yf
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
