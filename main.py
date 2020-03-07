@@ -4,6 +4,7 @@ it helps me to keep up to date with my stocks
 based on the yfinance module by Ran Aroussi
 '''
 
+
 #---------- general module imports ----------#
 import sys
 import datetime as dt
@@ -78,7 +79,7 @@ def main(token):
     dispatcher.add_handler(unknown_handler) # this must always be handeled last
     
     # add error handlers
-    dispatcher.add_error_handler(fyf.print_err)
+    dispatcher.add_error_handler(fb.print_err)
 
 
     # start up bot and keep idle until interrupt

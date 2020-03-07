@@ -55,7 +55,7 @@ def get_all_stock_data(symbol, cache=cached_stocks):
             stock.info
             cached_stocks[symbol] = stock
         except:
-            raise NameError('no data for stock symbol found')
+            raise RuntimeError('no data for stock symbol found')
  
     return stock
 
@@ -86,7 +86,7 @@ def filter_business_summary(stock):
     try:
         business_summary = stock.info['longBusinessSummary']
     except:
-        raise KeyError('specified data for stock symbol not found')
+        raise RuntimeError('specified data for stock symbol not found')
     
     return business_summary
 
@@ -148,7 +148,7 @@ def filter_daily_values(stock):
         ask = stock.info['ask']
         bid = stock.info['bid']
     except:
-        raise KeyError('specified data for stock symbol not found')
+        raise RuntimeError('specified data for stock symbol not found')
         
     daily = ('close yesterday: {} {}\n'.format(regularMarketPreviousClose, currency) +
              'open today: {} {}\n'.format(regularMarketOpen, currency) +
@@ -183,7 +183,7 @@ def filter_website_url(stock):
     try:
         url = stock.info['website']
     except:
-        raise KeyError('specified data for stock symbol not found')
+        raise RuntimeError('specified data for stock symbol not found')
     
     return url
 
@@ -458,47 +458,4 @@ def print_plot_dividends(update, context):
         context.bot.send_message(
         chat_id=update.effective_chat.id,
         text='ERROR: code {}'.format(val)
-        )
-
-
-#---------- error handler functions ----------#
-
-def print_err(update, context):
-    '''
-    send error message for stock data functions to chat
-
-    Parameters
-    ----------
-    update : telegram.ext.Updater
-        hands over the update from telegram chat
-    context : telegram.ext.CallbackContext
-        context for dispatcher
-
-    Raises
-    ------
-    for errors see 'print_err' below
-
-    Returns
-    -------
-    context.bot.send_message : telegram.ext.CallbackContext method
-        return message to effective chat id
-        returns string with error message for stock data functions
-    '''
-
-    try:
-        raise context.error
-    except NameError as err:
-        context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text='ERROR: {}'.format(err)
-        )
-    except KeyError as err:
-        context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text='ERROR: {}'.format(err)
-        )
-    except IndexError:
-        context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text='ERROR: you are possibly missing an argument for this command'
         )
